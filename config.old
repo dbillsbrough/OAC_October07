@@ -1,0 +1,301 @@
+/* config.c - read configuration file */
+
+/* Copyright (c) 2010, Lantronix, Inc. All rights reserved. */
+
+/*
+modification history
+--------------------
+01b,15jan10,nss  added SSH/SSL.
+01a,05aug08,nss  written.
+*/
+
+#include "s2e.h"
+//#include "s2e_common.h"
+#include <errno.h>
+
+char *conf_file_default = "s2e.conf";
+
+int
+read_config (const char *conf_file, struct s2e_t *conf_data)
+{
+	FILE *fp = NULL;
+	char input[128];
+	char token[64];
+	int line = 0;
+
+	if (conf_file)
+		fp = fopen (conf_file, "r");
+	if (fp == NULL) {
+		conf_file = conf_file_default;
+		fp = fopen (conf_file, "r");
+	}
+	if (fp == NULL) {
+		fprintf(stderr, "can't open %s: %s\n", conf_file, strerror(errno));
+		return (-1);
+	}
+
+	while (fgets(input, sizeof (input), fp)!=NULL){
+		char *ptr = input;
+		line ++;
+
+		ptr = get_token (ptr, token, sizeof (token));
+		if (token[0] == '#')
+			continue;
+
+		if (strcasecmp (token, "tty") == 0) {
+
+			ptr = get_token (ptr, token, sizeof (token));
+			if (strcmp (token, "{") != 0)
+				goto err;
+
+			while (fgets(input, sizeof (input), fp)!=NULL){
+				char *ptr = input;
+				line++;
+
+				ptr = get_token (ptr, token, sizeof (token));
+				if (token[0] == '#')
+					continue;
+
+				if (strcmp (token, "}") == 0) {
+					break;
+				}
+				else if (strcasecmp (token, "device") == 0) {
+					ptr = get_token (ptr, token, sizeof (token));
+					strncpy (conf_data->tty_device,
+						token, sizeof (conf_data->tty_device) - 1);
+				}
+				else if (strcasecmp (token, "baudrate") == 0) {
+					long value;
+					ptr = get_token (ptr, token, sizeof (token));
+			  		switch (atol (token)) {
+					case 921600:    value = 921600; break;
+					case 460800:	value = 460800;	break;
+					case 230400:	value = 230400;	break;
+					case 115200:	value = 115200;	break;
+					case 57600:		value = 57600;	break;
+					case 38400:		value = 38400;	break;
+					case 19200:		value = 19200;	break;
+					case 9600:		value = 9600;	break;
+					case 4800:		value = 4800;	break;
+					case 2400:		value = 2400;	break;
+					case 1200:		value = 1200;	break;
+					case 600:		value = 600;	break;
+					case 300:		value = 300;	break;
+					default:		goto err;		break;
+					}
+					conf_data->tty_baudrate = value;
+				}
+				else if  (strcasecmp (token, "parity") == 0) {
+					ptr = get_token (ptr, token, sizeof (token));
+					if (strcasecmp(token, "none") == 0)
+						conf_data->tty_parity = 0;
+					else if (strcasecmp(token, "odd") == 0)
+						conf_data->tty_parity = 1;
+					else if (strcasecmp(token, "even") == 0)
+						conf_data->tty_parity = 2;
+					else
+						goto err;
+				}
+				else if  (strcasecmp (token, "stopbit") == 0) {
+					int value;
+					ptr = get_token (ptr, token, sizeof (token));
+					value = atoi (token);
+					if (value < 1 || 2 < value)
+						goto err;
+					conf_data->tty_stopbit = value;
+				}
+				else if  (strcasecmp (token, "length") == 0) {
+					int value;
+					ptr = get_token (ptr, token, sizeof (token));
+					value = atoi (token);
+					if (value < 5 || 8 < value)
+						goto err;
+					conf_data->tty_length = value;
+				}
+				else if  (strcasecmp (token, "flow") == 0) {
+					ptr = get_token (ptr, token, sizeof (token));
+					if (strcasecmp(token, "none") == 0)
+						conf_data->tty_flow = 0;
+					else if (strcasecmp(token, "soft") == 0)
+						conf_data->tty_flow = 1;
+					else if (strcasecmp(token, "hard") == 0)
+						conf_data->tty_flow = 2;
+					else
+						goto err;
+				}
+				else if  (strcasecmp (token, "timeout") == 0) {
+					int value;
+					ptr = get_token (ptr, token, sizeof (token));
+					value = atol (token);
+					conf_data->tty_timeout = value;
+				}
+				else if  (strcasecmp (token, "dma") == 0) {
+					ptr = get_token (ptr, token, sizeof (token));
+					if (strcasecmp(token, "disable") == 0)
+						conf_data->tty_dma = 0;
+					else if (strcasecmp(token, "enable") == 0)
+						conf_data->tty_dma = 1;
+					else
+						goto err;
+				}
+				else if  (strcasecmp (token, "rs485") == 0) {
+					ptr = get_token (ptr, token, sizeof (token));
+					if (strcasecmp(token, "disable") == 0)
+						conf_data->tty_rs485 = 0;
+					else if (strcasecmp(token, "enable") == 0)
+						conf_data->tty_rs485 = 1;
+					else if (strcasecmp(token, "half") == 0)
+						conf_data->tty_rs485 = 1;
+					else if (strcasecmp(token, "full") == 0)
+						conf_data->tty_rs485 = 2;
+					else if (strcasecmp(token, "t-half") == 0)
+						conf_data->tty_rs485 = 3;
+					else if (strcasecmp(token, "t-full") == 0)
+						conf_data->tty_rs485 = 4;
+					else
+						goto err;
+				}
+				else if  (strcasecmp (token, "size") == 0) {
+					int value;
+					ptr = get_token (ptr, token, sizeof (token));
+					value = atol (token);
+					conf_data->tty_size = value;
+				}
+				else if  (strcasecmp (token, "delim") == 0) {
+					long value;
+					ptr = get_token (ptr, token, sizeof (token));
+					if (strcasecmp(token, "none") == 0) {
+						conf_data->tty_delim_len = 0;
+						break;
+					}
+					value = hatol (token);
+					if (value < 0)
+						goto err;
+					switch (strlen (token)) {
+					case 1:
+					case 2:
+						conf_data->tty_delim_code[0] = value & 0xff;
+						conf_data->tty_delim_len = 1;
+						break;
+					case 3:
+					case 4:
+						conf_data->tty_delim_code[0] = (value >> 8 ) & 0xff;
+						conf_data->tty_delim_code[1] = value & 0xff;
+						conf_data->tty_delim_len = 2;
+						break;
+					default:	goto err;	break;
+					}
+				}
+			}
+		}
+
+		else if (strcasecmp (token, "net") == 0) {
+
+			ptr = get_token (ptr, token, sizeof (token));
+			if (strcmp (token, "{") != 0)
+				goto err;
+
+			while (fgets(input, sizeof (input), fp)!=NULL){
+				char *ptr = input;
+				line++;
+
+				ptr = get_token (ptr, token, sizeof (token));
+				if (token[0] == '#')
+					continue;
+
+				if (strcmp (token, "}") == 0) {
+					break;
+				}
+				else if (strcasecmp (token, "mode") == 0) {
+					ptr = get_token (ptr, token, sizeof (token));
+					if (strcasecmp(token, "disable") == 0)
+						conf_data->net_mode = 0;
+					else if (strcasecmp(token, "server") == 0)
+						conf_data->net_mode = 1;
+					else if (strcasecmp(token, "client") == 0)
+						conf_data->net_mode = 2;
+					else
+						goto err;
+				}
+				else if (strcasecmp (token, "host") == 0) {
+					unsigned long value;
+					ptr = get_token (ptr, token, sizeof (token));
+
+					value = (unsigned long) inet_addr(token);
+					if (value == 0xffffffff)
+						goto err;
+
+					memcpy (conf_data->net_host, &value, 4);
+				}
+#ifdef INET6
+				else if  (strcasecmp (token, "ipv6") == 0) {
+					ptr = get_token (ptr, token, sizeof (token));
+					if (strcasecmp(token, "disable") == 0)
+						conf_data->net_ipv6 = 0;
+					else if (strcasecmp(token, "enable") == 0)
+						conf_data->net_ipv6 = 1;
+					else
+						goto err;
+				}
+				else if (strcasecmp (token, "host6") == 0) {
+					unsigned char value[16];
+					extern unsigned char ipv6_null[16];
+
+					ptr = get_token (ptr, token, sizeof (token));
+
+					if (inet_pton (AF_INET6, token, (char *)value) <= 0)
+						goto err;
+
+					memcpy (conf_data->net_host6, value, 16);
+					if (memcmp (conf_data->net_host6, ipv6_null, 16) != 0)
+						conf_data->have_net_host6 = 1;
+				}
+#endif	/* INET6 */
+				else if  (strcasecmp (token, "port") == 0) {
+					int value;
+					ptr = get_token (ptr, token, sizeof (token));
+					value = atoi (token);
+					if (value <= 0 || 0xffff < value)
+						goto err;
+					conf_data->net_port = value;
+				}
+				else if (strcasecmp (token, "proto") == 0) {
+					ptr = get_token (ptr, token, sizeof (token));
+					if (strcasecmp(token, "udp") == 0)
+						conf_data->net_proto = 0;
+					else if (strcasecmp(token, "tcp") == 0)
+						conf_data->net_proto = 1;
+#ifdef USE_SSH
+					else if (strcasecmp(token, "ssh") == 0)
+						conf_data->net_proto = 2;
+#endif	/* USE_SSH */
+#ifdef USE_SSL
+					else if (strcasecmp(token, "ssl") == 0)
+						conf_data->net_proto = 3;
+#endif	/* USE_SSL */
+					else
+						goto err;
+				}
+#ifdef USE_SSH
+				else if (strcasecmp (token, "user") == 0) {
+					ptr = get_token (ptr, token, sizeof (token));
+					strncpy(conf_data->user, token, NET_MAX_USER_LEN);
+					conf_data->user[NET_MAX_USER_LEN - 1] = '\0';
+					ptr = get_token (ptr, token, sizeof (token));
+					strncpy(conf_data->pass, token, NET_MAX_PASS_LEN);
+					conf_data->pass[NET_MAX_PASS_LEN - 1] = '\0';
+				}
+#endif	/* USE_SSH */
+			}
+		}
+	}
+
+	fclose (fp);
+	return 0;
+
+err:
+	fprintf(stderr, "Error %s in %d\n", conf_file, line);
+	if (fp)	fclose (fp);
+	return -1;
+}
+

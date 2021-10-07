@@ -1,0 +1,417 @@
+/* Revision: 2.9.5 */
+
+/******************************************************************************
+* Copyright 1998-2021 NetBurner, Inc.  ALL RIGHTS RESERVED
+*
+*    Permission is hereby granted to purchasers of NetBurner Hardware to use or
+*    modify this computer program for any use as long as the resultant program
+*    is only executed on NetBurner provided hardware.
+*
+*    No other rights to use this program or its derivatives in part or in
+*    whole are granted.
+*
+*    It may be possible to license this or other NetBurner software for use on
+*    non-NetBurner Hardware. Contact sales@Netburner.com for more information.
+*
+*    NetBurner makes no representation or warranties with respect to the
+*    performance of this computer program, and specifically disclaims any
+*    responsibility for any damages, special or consequential, connected with
+*    the use of this program.
+*
+* NetBurner
+* 16855 W Bernardo Dr
+* San Diego, CA 92127
+* www.netburner.com
+******************************************************************************/
+
+#include <predef.h>
+#include <stdio.h>
+#include <ctype.h>
+#include <startnet.h>
+#include <serial.h>
+#include <iosys.h>
+#include <utils.h>
+#include <ip.h>
+#include <tcp.h>
+#include <autoupdate.h>
+#include <taskmon.h>
+#include <dhcpclient.h>
+#include <signal.h>
+#include <multipartpost.h>
+#include <streamupdate.h>
+#include <init.h>
+#include <fdprintf.h>
+#include "s2e.h"
+// #include "s2e_common.h"
+
+#define DELAY5 0.500
+
+int debug = 0;
+int multi = 0;
+
+//struct exch_data* exchData;
+struct exch_data exchData2;
+extern struct config_data configData2;
+extern struct NV_SettingsStruct NV_Settings;
+
+
+int fd1;
+int fdnet;
+int fdserial;
+extern void displayIDD(char *);
+
+static char buffer[NET_BUF_SIZE];
+static char buffer2[TTY_BUF_SIZE];
+static char buffer3[TTY_BUF_SIZE];
+
+char *extra_name;
+static int only_once;
+
+/* function prototypes */
+extern void User2Main(void);
+extern void User3Main(void);
+extern void User4Main(void);
+extern void User5Main(void);
+extern void SaveParams(void);
+
+extern void usage(int argc, char *argv[]);
+
+/*
+ * The Tcp2Serial example program.
+ *
+ * This program opens a serial port and an TCP port and connects them.
+ * It does this with no flow control, or char mapping.
+ *
+ * This scheme has a Fatal flaw....
+ *
+ * TCP has no keep alive message. So if a computer connects using TCP and
+ * then dies it will not be detected, unless some trafic is going across
+ * the link.
+ *
+ * This program only allows one TCP connection at a time to be connected to
+ * the serial port. Combineing these would allow a dead client on the other
+ * end of the connection to tie up the resoure forever. This program combats
+ * this problem with two schemes:
+ *
+ * 1) If the TCP connection has been idle for some selectable period of time,
+ *    it is closed and disconnected. The timeout value can be adjusted by
+ *    setting #define below:
+ */
+
+// The number of seconds between receiveing TCP chars before timeout.
+// A value of 0 will disable this feature.
+#define  TIMEOUT_LIMIT  (60)
+
+/* 2) If a new client TCP connection is attempted while one is active,
+ *    one of the following three actions can be taken:
+ *      a) Ignore the incomming connection (leave current connection active)
+ *           (set override to 0xFFFFFFFF)
+ *      b) Replace the existing connection if it has been idle for x seconds.
+ *           (set override to the number of seconds to wait)
+ *      c) Always replace the existing connection.
+ *           (set override to 0 seconds)
+ *
+ *    This is done with the override timeout setting below:
+ */
+
+// The number of seconds to wait before a new connection can override an
+// existing connection.
+
+#define OVERIDE_TIMEOUT  (20)
+
+#define READ_SERIAL_TIMEOUT (50)
+
+/*
+ * Since this may be used for machine to machine connections we allow you
+ * to easily change the messages that are sent.
+ *
+ * MTS messages are Message To Serial
+ * MTN messages are Messages to the Network
+ */
+#define MTS_WHEN_NOTCONNECTED  "Waiting for connection \r\n"
+#define MTS_WHEN_CONNECTION_OPENED  "New Connection Opened\r\n"
+#define MTS_WHEN_CONNECTION_CLOSED "Connection Closed by Network \r\n"
+#define MTS_WHEN_CONNECTION_TIMEDOUT "Connection Timed out and Closed\r\n"
+#define MTS_WHEN_CONNECTION_OVERIDDEN "This Connection is being Overidden.\r\n"
+#define MTN_WHEN_CONNECTION_OVERIDDEN "Your Connection was just Overidden\r\n"
+#define MTN_WHEN_CONNECTION_OPENED  "Connection Opened \r\n"
+#define MTN_WHEN_CONNECTION_TIMEDOUT "Your Connection Timed out and will be Closed\r\n"
+
+#define SERIALPORT_TO_USE (1) //0 for the main port, 1 for the 10pin aux serial port
+#define BAUDRATE_TO_USE (9600)
+#define STOP_BITS (1)
+#define DATA_BITS (8)
+
+#define SERIALPORT_TO_USE1 (0) //0 for the main port, 1 for the 10pin aux serial port
+#define BAUDRATE_TO_USE1 (9600)
+#define STOP_BITS1 (1)
+#define DATA_BITS1 (8)
+
+#define TCP_PORT_TO_USE   (5217) //The Telnet port
+
+
+extern "C"
+{
+   void UserMain( void *pd );
+}
+
+
+const char *AppName = "OAC Pathfinder";
+
+
+void UserMain( void *pd )
+{
+	//int selRet;
+	int max_fd = 0;
+	struct timeval maxBlockTV;
+
+	//struct NV_SettingsStruct* NV_Settings;
+	//NV_Settings = &NV_Settings2;
+
+	struct exch_data* exchData;
+	exchData = &exchData2;
+
+	InitializeStack();
+
+	exchData->modemIsFunctional = 0;
+
+	if ( EthernetIP.IsNull() ) {
+		iprintf( "Trying DHCP\r\n" );
+		GetDHCPAddress();
+		iprintf( "DHCP assigned the IP address of :" );
+		ShowIP( EthernetIP );
+		iprintf( "\r\n" );
+	} else {
+		iprintf( "Static IP address set to :" );
+		ShowIP( EthernetIP );
+		iprintf( "\r\n" );
+	}
+
+	OSChangePrio( MAIN_PRIO );
+	EnableAutoUpdate();
+	EnableTaskMonitor();
+
+	User2Main();
+	User3Main();
+	User5Main();
+	User4Main();
+
+	//Close the serial port incase it is already open.
+	SerialClose( SERIALPORT_TO_USE );
+	SerialClose( SERIALPORT_TO_USE1 );
+
+	fd_set read_fds;
+	fd_set error_fds;
+
+	//Open the serial port
+	fdserial = OpenSerial( SERIALPORT_TO_USE, BAUDRATE_TO_USE, STOP_BITS, DATA_BITS, eParityNone );
+
+	fd1 = OpenSerial( SERIALPORT_TO_USE1, BAUDRATE_TO_USE1, STOP_BITS1, DATA_BITS1, eParityNone );
+
+	//Set up the Listening TCP socket
+	iprintf("Starting to listen on TCP port: %d\n", configData2.modemport);
+
+	if (configData2.oamodesel == 2) {
+		iprintf("Here 2?\r\n");
+		FD_ZERO( &read_fds );
+		FD_SET( fdserial, &read_fds );
+		FD_SET( fd1, &read_fds);
+
+	} else {
+
+		int fdListen = listen( INADDR_ANY, configData2.modemport, 5 );
+
+		if ( fdListen > 0 ) {
+			IPADDR client_addr;
+			WORD port;
+			//writestring( fdserial, MTS_WHEN_NOTCONNECTED );
+
+			while ( 1 ) {
+
+				fdnet = accept( fdListen, &client_addr, &port, 0 );
+
+				writestring( fdserial, MTS_WHEN_CONNECTION_OPENED );
+				writestring( fdnet, MTN_WHEN_CONNECTION_OPENED );
+				int tcp_timeout = 0;
+
+				// Init new AMIP connection parms
+				Amip_InitNewConnection( exchData );
+
+				// Every time we connect with modem, send initial openAMIP commands to it.
+				// Tell Modem to send Status every 15 seconds.
+				if ( Amip_SetSendLockInterval( exchData, 10 ) != 0 )
+					printf( "Error: Could not send Lock Interval to AMIP client.\r\n" );
+
+				OSTimeDly (DELAY5); // Wait 0.5 seconds before sending another command.
+				// Send initial 's' functiona and mayTx info
+				Amip_SendAntennaStatus( exchData );
+
+				OSTimeDly (DELAY5); // Wait 0.5 seconds before sending another command.
+
+				// tell Modem to send SNR every 200 msec.
+
+				if (configData2.oamodesel == 3) {
+					if ( Amip_SetSendSnrInterval( exchData, 200 ) != 0 )
+						printf( "Error: Could not send Lock Interval to AMIP client.\r\n" );
+				}
+
+				while ( fdnet > 0 ) {
+
+					FD_ZERO( &read_fds );
+					FD_SET( fdnet, &read_fds );
+					FD_SET( fdserial, &read_fds );
+					FD_SET( fd1, &read_fds);
+
+					//We only check for a waiting socket on the listener when we could do something about it.
+					if ( tcp_timeout >= OVERIDE_TIMEOUT ) {
+						FD_SET( fdListen, &read_fds );
+					}
+
+					FD_ZERO( &error_fds );
+					FD_SET( fdnet, &error_fds );
+
+					exchData->modemIsFunctional = 1;
+
+					if ( select( FD_SETSIZE, &read_fds, ( fd_set * ) 0, &error_fds, TCP_WRITE_TIMEOUT )) {
+						if ( FD_ISSET( fdnet, &read_fds ) ) {
+
+							int readLen;
+
+							if ((readLen = net_focusMission_read(fdnet, buffer)) < 0) {
+								perror( NULL );
+								printf( "TCP Read Error: %d\r\n", readLen );
+								printf( "buffer: %s\r\n", buffer );
+								// Close the network port on error.
+								close(fdnet);
+								iprintf("Ooops, we are going to bail!!\n\n");
+								// Start again at top of infinite loop
+								continue;
+							} else if ( readLen > 0 ) {
+								// Parse AMIP RX bytes
+								Amip_ProcessRxBytes( buffer, readLen, exchData );
+							}
+
+							//printf("OpenAMIP Rx Bytes: %d\r\n", readLen );
+						}
+					}
+				}
+			}
+
+		iprintf("continue loop without net ...");
+
+		if ( FD_ISSET( fdserial, &read_fds )) {
+			int readLen2;
+
+			// 13.3 ReadWithTimeout -- page 159  (*** HDB)
+			if ((readLen2 = ReadWithTimeout(fdserial, buffer2, sizeof(buffer2 - 1), READ_SERIAL_TIMEOUT)) < 0) {
+				perror(NULL);
+				printf("TTY Read Error: %d\r\n", readLen2);
+				close(fdserial);
+				//continue;
+			} else if (readLen2 == 0) {
+				write( fdserial, "?02STS\r\n", 8 );
+				iprintf("sending to first serial port status request\n");
+			} else if (readLen2 > 0) {
+				if (readLen2 < (int) sizeof(buffer2))
+					buffer2[readLen2] = 0;
+				else
+					buffer2[sizeof(buffer2 - 1)] = 0;
+
+				Aux_ProcessRxBytes( buffer2, readLen2, exchData);
+			}
+
+		//if ( readLen2 > 0 )
+			//	printf( "Aux Remote Rx Bytes: %d\r\n", readLen2 );
+
+			// Check for any required messages to send to OpenAMIP client.
+			Amip_SendTimerMsgs( exchData );
+
+			// Check for any required messages to send to Aux Remote.
+			Aux_SendTimerMsgs( exchData );
+
+			// Send Tcp test write if nothing has been written for 2 seconds
+			if ( TimerElapsed( &(exchData->lastAmipWrite), 2.0 ) ) {
+				LatchTime( &(exchData->lastAmipWrite) );
+					if ( write(fdnet, "\r\n", 2 ) <= 0 ) {
+						iprintf("IT'S BEEN QUIET");
+					close( fdnet );
+							}
+						}
+
+						// Sleep for loop rest unless rx arrives from either AMIP or Aux Remote
+						FD_ZERO(&read_fds);
+						FD_SET (fdnet, &read_fds);
+						FD_SET (fdserial, &read_fds);
+						FD_SET (fd1, &read_fds);
+
+						max_fd = (fdserial < fdnet) ? fdnet : fdserial;
+						maxBlockTV.tv_sec = 0;
+						maxBlockTV.tv_usec = 10;
+						//selRet = select(max_fd + 1, &read_fds, NULL, NULL, (long unsigned int) &maxBlockTV);
+						//iprintf("Returned %d\n", selRet);
+						//printf( "\r\nret: %d  sec: %lld  usec: %ld\r\n", selRet, maxBlockTV.tv_sec, maxBlockTV.tv_usec ); */
+					}
+
+
+
+					if (FD_ISSET( fd1, &read_fds )) {
+
+						int readLen3;
+
+						if (only_once == false) {
+							write( fd1, "\r\n", 2 );
+							iprintf("Did I get here?\r\n");
+							only_once = true;
+						}
+
+						if ((readLen3 = ReadWithTimeout(fd1, buffer3, sizeof(buffer3 - 1), READ_SERIAL_TIMEOUT)) < 0) {
+							perror(NULL);
+							printf("TTY 2 Read Error: %d\r\n", readLen3);
+							close(fd1);
+						} else if (readLen3 == 0) {
+							write( fd1, "\r\n", 2 );
+							iprintf("sending extra CRLFs\n");
+						} else if (readLen3 > 0) {
+							if (readLen3 < (int) sizeof(buffer3))
+								buffer3[readLen3] = 0;
+							else
+								buffer3[sizeof(buffer3 - 1)] = 0;
+							iprintf("buffer3: %s\n", buffer3);
+							Serial_ProcessRxBytes( fd1, buffer3, readLen3, exchData);
+						}
+					}
+
+					if ( FD_ISSET( fdnet, &error_fds )) {
+						writestring( fdserial, MTS_WHEN_CONNECTION_CLOSED );
+						close( fdnet );
+						fdnet = 0;
+						writestring( fdserial, MTS_WHEN_NOTCONNECTED );
+					}
+
+					if ( FD_ISSET( fdListen, &read_fds )) {
+						//We have a new suitor waiting on the listening socket.
+						writestring( fdserial, MTS_WHEN_CONNECTION_OVERIDDEN );
+						writestring( fdnet, MTN_WHEN_CONNECTION_OVERIDDEN );
+						close( fdnet );
+						fdnet = 0;
+					}
+				 //} else {
+					//Select Timed out
+					//tcp_timeout++;
+
+					//exchData->modemIsFunctional = 0;
+					//iprintf("The TCP timeout exceeded the limit has occurred!\n");
+
+					if ( tcp_timeout > TIMEOUT_LIMIT ) {
+						FD_ZERO( &read_fds );
+						writestring( fdserial, MTS_WHEN_CONNECTION_TIMEDOUT );
+						writestring( fdnet, MTN_WHEN_CONNECTION_TIMEDOUT );
+						close( fdnet );
+						writestring( fdserial, MTS_WHEN_NOTCONNECTED );
+						fdnet = 0;
+					}
+				}
+		} // Select
+}
+
+/* End of File */

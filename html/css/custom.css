@@ -1,0 +1,177 @@
+.nav {
+  display: -webkit-inline-box !important;
+}
+
+.white {
+  color: white;
+}
+
+.nav-top {
+  background: white !important;
+  height: 60px;
+}
+
+.nav-bottom {
+  background: white !important;
+}
+
+.navbar.horizontal-layout .nav-top .navbar-brand-wrapper .navbar-brand img {
+  height: 55px !important;
+}
+
+.footer {
+  text-align: center;
+}
+
+#tracstar-img {
+  width: 100%;
+}
+
+.current-profile {
+  color: black;
+  font-weight: 700;
+}
+
+.profile-slected {
+  color: black;
+  font-weight: 700;
+}
+
+.dropdown-toggle {
+  color: black !important;
+}
+
+.status-indicator {
+  height: 50px;
+  border-radius: 5px;
+  display: flex;
+  justify-content: center;
+}
+
+.status-center {
+  justify-content: center;
+  align-items: center;
+}
+
+#antenna-status {
+  background: red;
+}
+
+#modem-status {
+  background: red;
+}
+
+.device-display-border {
+  border-radius: 5px;
+  background-color: #ebf17d;
+}
+
+.device-display {
+  border: 2px double silver;
+  border-radius: 5px;
+  padding: 10px;
+  margin: 10px;
+  background-color: #ebf17d;
+}
+
+.device-display input[readonly] {
+  border: none;
+  background-color: #ebf17d;
+  text-align: center;
+  font-family: monospace;
+  font-size: 3vw;
+  line-height: 10vh;
+  height: 10vh;
+}
+
+.br-theme-bars-square .br-widget a {
+  width: 1.3vw !important;
+  height: 46px !important;
+  background-color: rgba(245, 166, 35, 0.6);
+}
+
+.br-theme-bars-square .br-widget a.br-active, .br-theme-bars-square .br-widget a.br-selected {
+  background-color: rgba(245, 166, 35, 1);
+}
+
+.tracstar-controller {
+  margin: 0px;
+  padding: 10px;
+  border: 2px double #000;
+  background-color: #000;
+}
+
+.card-statistics .card-statistics-item {
+  padding: 2rem 1rem 2rem 1rem;
+}
+
+.navbar.horizontal-layout .nav-top .navbar-menu-wrapper .navbar-nav .nav-item.dropdown .navbar-dropdown {
+  padding: 10px;
+}
+
+.stack-container {
+  -moz-column-count: 2;
+  -moz-column-gap: 10px;
+  -webkit-column-count: 2;
+  -webkit-column-gap: 10px;
+  column-count: 2;
+  column-gap: 10px;
+}
+
+.stack-container div {
+  display: inline-block;
+  width: 100%;
+}
+
+.card-columns {
+  column-count: 2;
+}
+
+​ @media (max-width: 576px) {
+  .device-display input[readonly] {
+    font-size: 8vw;
+  }
+
+  .card-columns {
+    column-count: 1;
+  }
+}
+
+@media (max-width: 768px) {
+  .device-display input[readonly] {
+    font-size: 6vw;
+  }
+
+  .card-columns {
+    column-count: 1;
+  }
+}
+
+@media (max-width: 992px) {
+  .device-display input[readonly] {
+    font-size: 6vw;
+  }
+
+  .card-columns {
+    column-count: 1;
+  }
+}
+
+.col-lg-8>input['type=checkbox'] {
+  display: block !important;
+}
+
+.input-adjust {
+  position: relative;
+  top: -4px;
+}
+
+#currentProfileId {
+  padding-left: 0px;
+  padding-right: 0px;
+  text-align: center;
+}
+
+.accordion .card .card-header a[aria-expanded="true"] {
+  color: #000000;
+}

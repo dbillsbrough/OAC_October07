@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <!-- Required meta tags -->
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <title>PathFinder Digital Antenna Monitoring & Adminstration Console | Dashboard</title>
+  <!-- plugins:css -->
+  <link rel="stylesheet" href="css/iconfonts/simple-line-icon/css/simple-line-icons.css">
+  <link rel="stylesheet" href="css/vendor.bundle.base.css">
+  <link rel="stylesheet" href="css/custom.addons.css">
+  <!-- endinject -->
+  <!-- plugin css for this page -->
+  <!-- End plugin css for this page -->
+  <!-- inject:css -->
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/custom.css">
+  <!-- endinject -->
+  <link rel="shortcut icon" href="images/favicon.png" />
+</head>
+
+<body>
+  <div class="container-scroller">
+
+    <div class="modal fade" id="loginModal" tabindex="-1" role="dialog" aria-labelledby="loginModal" aria-hidden="true">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="col-12 bg-white">
+            <div class="d-flex align-items-center flex-column">
+              <!-- <form action="#"> -->
+                <h3 class="mt-5">Login As Administrator</h3>
+                <p class="mb-5">Enter your details below.</p>
+                <div class="form-group">
+                  <div class="input-group">
+                    <div class="input-group-prepend">
+                      <span class="input-group-text"><i class="icon-user"></i></span>
+                    </div>
+                    <input id="username" type="text" class="form-control" placeholder="Username">
+                  </div>
+                </div>
+                <div class="form-group">
+                  <div class="input-group">
+                    <div class="input-group-prepend">
+                      <span class="input-group-text"><i class="icon-lock"></i></span>
+                    </div>
+                    <input id="password" type="password" class="form-control" placeholder="Password">
+                  </div>
+                </div>
+                <div class="mb-5 form-group">
+                  <button class="btn btn-primary submit-btn" onclick='login()'>SIGN IN</button>
+                </div>
+              <!-- </form> -->
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal fade" id="loadProfileModal" tabindex="-1" role="dialog" aria-labelledby="loadProfileModal" aria-hidden="true">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="col-12 bg-white">
+            <div class="d-flex align-items-center flex-column">
+              <!-- <form action="#"> -->
+                <h3 class="mt-5">Confirm Change Profile</h3>
+
+                <h3 id="modalProfileName" class="modal-body">
+                </h3>
+
+                <h5>*A reboot is required to use this profile</h5>
+                <!-- <label class="form-check-label">
+                  <input id="rebootRequired" type="checkbox" class="form-check-input" checked="true">
+                  Reboot
+                </label> -->
+
+                <div class="modal-footer">
+                  <button id="submitLoadProfile" type="button" class="btn btn-success">Ok</button>
+                  <button id="cancelLoadProfile" type="button" class="btn btn-light">Close</button>
+                </div>
+              <!-- </form> -->
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal fade" id="rebootModal" tabindex="-1" role="dialog" aria-labelledby="rebootModal" aria-hidden="true">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="col-12 bg-white">
+            <div class="d-flex align-items-center flex-column">
+              <h3 class="mt-5">System Rebooting</h3>
+              <div class="col-sm-3 col-md-4 col-6 circle-progress-block">
+                <div id="circleProgress1" class="progressbar-js-circle  rounded p-3"></div>
+              </div>
+              <div class="modal-footer">
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal fade" id="uploadModal" tabindex="-1" role="dialog" aria-labelledby="uploadModal" aria-hidden="true">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="col-12 bg-white">
+            <div class="d-flex align-items-center flex-column">
+              <h3 class="mt-5">Uploading Firmware</h3>
+              <div class="col-sm-3 col-md-4 col-6 circle-progress-block">
+                <div id="circleProgress2" class="progressbar-js-circle rounded p-3"></div>
+              </div>
+              <div class="modal-footer">
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- partial:partials/_horizontal-navbar.html -->
+    <nav class="navbar horizontal-layout col-lg-12 col-12 p-0">
+      <div class="nav-top flex-grow-1">
+        <div class="container d-flex flex-row h-100 align-items-center">
+          <div class="text-center navbar-brand-wrapper d-flex align-items-center">
+            <a class="navbar-brand brand-logo pl-2 pr-2" href="index.html"><img src="images/pathfinder-digital-large.jpg" alt="logo" /></a>
+          </div>
+          <div class="navbar-menu-wrapper d-flex align-items-center justify-content-between flex-grow-1">
+            <ul class="navbar-nav navbar-nav-right mr-0 ml-auto">
+
+              <li class="nav-item">
+                <div class="nav-link menu-title">
+                  <span id="currentProfile" class="current-profile"></span>
+                </div>
+              </li>
+
+              <li class="nav-item dropdown d-lg-flex nav-language">
+                <div class="nav-link">
+                  <span class="dropdown-toggle btn btn-sm" data-toggle="dropdown">Change Profile
+                  </span>
+                  <div class="dropdown-menu navbar-dropdown" id="profileSettingDropdown">
+                  </div>
+                </div>
+              </li>
+
+              <li id="login-button" class="nav-item"><button type="button" class="btn btn-primary submit-btn btn-block" data-toggle="modal" data-target="#loginModal">Login</button></li>
+              <li id="admin-profile" class="nav-item nav-profile dropdown">
+                <a class="nav-link dropdown-toggle" href="#" data-toggle="dropdown" id="profileDropdown">
+                  <img src="https://via.placeholder.com/39x39" alt="profile"/>
+                  <span class="nav-profile-name">Admin</span>
+                </a>
+                <div class="dropdown-menu dropdown-menu-right navbar-dropdown" aria-labelledby="profileDropdown">
+                  <a class="dropdown-item mt-1" onclick="logout()">
+                    <i class="icon-logout text-primary mr-2"></i>
+                    Logout
+                  </a>
+                </div>
+              </li>
+            </ul>
+            <button class="navbar-toggler align-self-center" type="button" data-toggle="minimize">
+              <span class="icon-menu"></span>
+            </button>
+          </div>
+        </div>
+      </div>
+      <div class="nav-bottom">
+        <div class="container">
+          <ul class="nav page-navigation float-left">
+            <li class="nav-item">
+              <a href="index.html" class="nav-link"><i class="link-icon icon-screen-desktop"></i><span class="menu-title">Dashboard</span></a>
+            </li>
+            <li class="nav-item admin-nav-link">
+              <a href="pages/admin.html" class="nav-link"><i class="link-icon icon-settings"></i><span class="menu-title">Admin</span></a>
+            </li>
+            <li class="nav-item admin-nav-link">
+              <a href="pages/config.html" class="nav-link"><i class="link-icon icon-settings"></i><span class="menu-title">Modem Config</span></a>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </nav>
+
+    <!-- partial -->
+    <div class="container-fluid page-body-wrapper">
+      <div class="main-panel">
+        <div class="content-wrapper">
+          <div class="row">
+            <div class="col-12 grid-margin">
+              <div class="card card-statistics">
+                <div class="card-body p-0">
+                  <div class="row">
+
+                    <div class="col-5 col-sm-4 col-md-4 col-lg-3">
+                      <div class="d-flex justify-content-between card-statistics-item">
+                        <div class="col-12">
+                          <h1 id="signal-strength-value">00.00</h1>
+                          <p class="text-muted mb-0">Signal Strength</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="col-7 col-sm-8 col-md-8 col-lg-5">
+                      <div class="d-flex flex-nowrap justify-content-between card-statistics-item">
+                        <div class="br-wrapper">
+                          <select id="signal-strength" name="rating" autocomplete="off" size="5">
+                            <option value="1"></option>
+                            <option value="2"></option>
+                            <option value="3"></option>
+                            <option value="4"></option>
+                            <option value="5"></option>
+                            <option value="6"></option>
+                            <option value="7"></option>
+                            <option value="8"></option>
+                            <option value="9"></option>
+                            <option value="10"></option>
+                            <option value="11"></option>
+                            <option value="12"></option>
+                            <option value="13"></option>
+                            <option value="" selected="selected"></option>
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="col-6 col-sm-6 col-md-6 col-lg-2">
+                      <div class="d-flex justify-content-between card-statistics-item">
+                        <div class="d-flex flex-nowrap justify-content-sm-between text-center">
+                          <div class="col-12">
+                            <div id="antenna-status" class="status-indicator"></div>
+                            <p class="text-muted mb-0">Antenna Status</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+
+                    <div class="col-6 col-sm-6 col-md-6 col-lg-2">
+                      <div class="d-flex justify-content-between card-statistics-item">
+                        <div class="d-flex flex-nowrap justify-content-sm-between text-center">
+                          <div class="col-12">
+                            <div id="modem-status" class="status-indicator"></div>
+                            <p class="text-muted mb-0">Modem Status</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                  </div>
+
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- <div class="row">
+
+            <div class="col-12">
+              <div class="card card-statistics">
+                <div class="card-body p-0">
+                  <div class="d-flex justify-content-between card-statistics-item">
+
+                    <div class="col-md-6 col-lg-6">
+                      <div class="col-12">
+
+                        <div class="d-flex justify-content-between border-right card-statistics-item">
+                          <div>
+                            <div id="antenna-status" class="status-indicator"></div>
+                            <p class="text-muted mb-0">Antenna Status</p>
+                          </div>
+                        </div>
+                      </div>
+
+                    </div>
+
+                    <div class="col-md-6 col-lg-6">
+                      <div class="d-flex justify-content-between card-statistics-item">
+                        <div>
+                          <div id="modem-status" class="status-indicator"></div>
+                          <p class="text-muted mb-0">Modem Status</p>
+                        </div>
+                      </div>
+                    </div>
+
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div> -->
+
+          <div class="tracstar-controller">
+            <h3 class="white">Tracstar Controller</h3>
+            <div class="row">
+              <div class="col-12 grid-margin">
+                <div class="card device-display-border">
+                  <div class="card-body p-0 device-display">
+                    <div class="row">
+                      <div class="col-12">
+                        <input id="display-1" class="form-control" type="text" name="display-2" readonly>
+                        <!-- <input id="display-1" class="form-control" type="text" name="display-2" value="1CHAR:1234567890" readonly> -->
+                      </div>
+                    </div>
+                    <div class="row">
+                      <div class="col-12">
+                        <input id="display-2" class="form-control" type="text" name="display-2" readonly></input>
+                        <!-- <input id="display-2" class="form-control" type="text" name="display-2" value="2CHAR:1234567890" readonly></input> -->
+                      </div>
+                    </div>
+
+                  </div>
+                </div>
+              </div>
+            </div>
+
+
+            <div class="row">
+              <div class="col-12">
+                <div class="col-lg-12 grid-margin">
+                  <div id="tracstar-functions" class="row mt-1">
+                    <div class="col-4 ">
+                      <button id="run-button" type="button" class="btn btn-outline-light btn-block" data-toggle="button" aria-pressed="true" aria-on="false">Run</button>
+                    </div>
+                    <div class="col-4">
+                      <button id="stop-button" type="button" class="btn btn-outline-light btn-block" data-toggle="button" aria-pressed="false" aria-on="false">Stop</button>
+                    </div>
+                    <div class="col-4">
+                      <button id="stow-button" type="button" class="btn btn-outline-light btn-block" data-toggle="button" aria-pressed="false" aria-on="false">Stow</button>
+                    </div>
+                  </div>
+                </div>
+                <!-- <div class="col-lg-6 grid-margin">
+                <img id="tracstar-img" src="images/tracstar-interface-large.png" alt="TracStar Interface" />
+              </div> -->
+              </div>
+
+            </div>
+
+            <form id="restoreProfile" class="cmxform" action="../FORMPOST.HTM" method="post">
+            </form>
+
+          </div>
+          <!-- content-wrapper ends -->
+          <!-- partial:partials/_footer.html -->
+          <footer class="footer ml-5 mr-5">
+            <div class="w-100 clearfix">
+              <span class="text-muted d-block text-center text-sm-left d-sm-inline-block">Copyright © 2021 PathFinder Digital. All rights reserved.</span>
+            </div>
+            <div class="w-100 clearfix">
+              <span class="d-block text-center text-sm-left d-sm-inline-block">Version: 1.00.B</span>
+            </div>
+            
+            <div id="profileList" hidden>
+              <!--FUNCTIONCALL DisplayProfiles -->
+            </div>
+
+          </footer>
+
+          <!-- partial -->
+        </div>
+        <!-- main-panel ends -->
+      </div>
+      <!-- page-body-wrapper ends -->
+    </div>
+    <!-- container-scroller -->
+
+    <!-- plugins:js -->
+    <script src="js/vendor.bundle.base.js"></script>
+    <script src="js/custom.addons.js"></script>
+    <script src="js/app.js"></script>
+    <!-- endinject -->
+    <!-- Plugin js for this page-->
+    <!-- End plugin js for this page-->
+    <!-- inject:js -->
+    <script src="js/template.js"></script>
+    <!-- endinject -->
+    <!-- Custom js for this page-->
+    <script src="js/form.addons.js"></script>
+    <!-- End custom js for this page-->
+</body>
+
+</html>

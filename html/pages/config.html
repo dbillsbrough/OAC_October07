@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <!-- Required meta tags -->
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <title>PathFinder Digital Antenna Monitoring & Adminstration Console | Modem Configuration</title>
+  <!-- plugins:css -->
+  <link rel="stylesheet" href="../css/iconfonts/simple-line-icon/css/simple-line-icons.css">
+  <link rel="stylesheet" href="../css/vendor.bundle.base.css">
+  <link rel="stylesheet" href="../css/custom.addons.css">
+  <!-- endinject -->
+  <!-- plugin css for this page -->
+  <!-- End plugin css for this page -->
+  <!-- inject:css -->
+  <link rel="stylesheet" href="../css/style.css">
+  <link rel="stylesheet" href="../css/custom.css">
+  <!-- endinject -->
+  <link rel="shortcut icon" href="../images/favicon.png" />
+
+  <script type="text/javascript">
+    document.onreadystatechange = function(e) {
+      if (document.readyState === 'complete') {
+        if (sessionStorage.getItem('loggedIn') && sessionStorage.getItem('loggedIn') === 'false') {
+          window.location.assign('../index.html');
+        }
+      }
+    };
+  </script>
+
+</head>
+
+<body>
+  <div class="container-scroller">
+
+    <div class="modal fade" id="loginModal" tabindex="-1" role="dialog" aria-labelledby="loginModal" aria-hidden="true">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="col-12 bg-white">
+            <div class="d-flex align-items-center flex-column">
+              <!-- <form action="#"> -->
+              <h3 class="mt-5">Login As Administrator</h3>
+              <p class="mb-5">Enter your details below.</p>
+              <div class="form-group">
+                <div class="input-group">
+                  <div class="input-group-prepend">
+                    <span class="input-group-text"><i class="icon-user"></i></span>
+                  </div>
+                  <input id="username" type="text" class="form-control" placeholder="Username">
+                </div>
+              </div>
+              <div class="form-group">
+                <div class="input-group">
+                  <div class="input-group-prepend">
+                    <span class="input-group-text"><i class="icon-lock"></i></span>
+                  </div>
+                  <input id="password" type="password" class="form-control" placeholder="Password">
+                </div>
+              </div>
+              <div class="mb-5 form-group">
+                <button class="btn btn-primary submit-btn" onclick='login()'>SIGN IN</button>
+              </div>
+              <!-- </form> -->
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal fade" id="loadProfileModal" tabindex="-1" role="dialog" aria-labelledby="loadProfileModal" aria-hidden="true">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="col-12 bg-white">
+            <div class="d-flex align-items-center flex-column">
+              <!-- <form action="#"> -->
+                <h3 class="mt-5">Confirm Change Profile</h3>
+
+                <h3 id="modalProfileName" class="modal-body">
+                </h3>
+
+                <h5>*A reboot is required to use the profile</h5>
+
+                <div class="modal-footer">
+                  <button id="submitLoadProfile" type="button" class="btn btn-success">Ok</button>
+                  <button id="cancelLoadProfile" type="button" class="btn btn-light">Close</button>
+                </div>
+              <!-- </form> -->
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal fade" id="loadChangeSettingsModal" tabindex="-1" role="dialog" aria-labelledby="loadChangeSettingsModal" aria-hidden="true">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="col-12 bg-white">
+            <div class="d-flex align-items-center flex-column">
+              <!-- <form action="#"> -->
+                <h3 class="mt-5">Confirm Settings Change</h3>
+
+                <h3 id="modalProfileName" class="modal-body">
+                </h3>
+
+                <h5>*A reboot is required to change these settings</h5>
+
+                <div class="modal-footer">
+                  <button id="submitChangeSettings" type="button" class="btn btn-success">Ok</button>
+                  <button id="cancelChangeSettings" type="button" class="btn btn-light">Close</button>
+                </div>
+              <!-- </form> -->
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal fade" id="rebootModal" tabindex="-1" role="dialog" aria-labelledby="rebootModal" aria-hidden="true">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="col-12 bg-white">
+            <div class="d-flex align-items-center flex-column">
+              <h3 class="mt-5">System Rebooting</h3>
+              <div class="col-sm-3 col-md-4 col-6 circle-progress-block">
+                <div id="circleProgress1" class="progressbar-js-circle  rounded p-3"></div>
+              </div>
+              <div class="modal-footer">
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal fade" id="uploadModal" tabindex="-1" role="dialog" aria-labelledby="uploadModal" aria-hidden="true">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="col-12 bg-white">
+            <div class="d-flex align-items-center flex-column">
+              <h3 class="mt-5">Uploading Firmware</h3>
+              <div class="col-sm-3 col-md-4 col-6 circle-progress-block">
+                <div id="circleProgress2" class="progressbar-js-circle rounded p-3"></div>
+              </div>
+              <div class="modal-footer">
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- partial:../partials/_horizontal-navbar.html -->
+    <nav class="navbar horizontal-layout col-lg-12 col-12 p-0">
+      <div class="nav-top flex-grow-1">
+        <div class="container d-flex flex-row h-100 align-items-center">
+          <div class="text-center navbar-brand-wrapper d-flex align-items-center">
+            <a class="navbar-brand brand-logo pl-2 pr-2" href="../index.html"><img src="../images/pathfinder-digital-large.jpg" alt="logo" /></a>
+          </div>
+          <div class="navbar-menu-wrapper d-flex align-items-center justify-content-between flex-grow-1">
+            <ul class="navbar-nav navbar-nav-right mr-0 ml-auto">
+
+              <li class="nav-item">
+                <div class="nav-link menu-title">
+                  <span id="currentProfile" class="current-profile"></span>
+                </div>
+              </li>
+
+              <li class="nav-item dropdown d-lg-flex nav-language">
+                <div class="nav-link">
+                  <span class="dropdown-toggle btn btn-sm" data-toggle="dropdown">Change Profile
+                  </span>
+                  <div class="dropdown-menu navbar-dropdown" id="profileSettingDropdown">
+                  </div>
+                </div>
+              </li>
+
+              <li id="login-button" class="nav-item"><button type="button" class="btn btn-primary submit-btn btn-block" data-toggle="modal" data-target="#loginModal">Login</button></li>
+              <li id="admin-profile" class="nav-item nav-profile dropdown">
+                <a class="nav-link dropdown-toggle" href="#" data-toggle="dropdown" id="profileDropdown">
+                  <img src="https://via.placeholder.com/39x39" alt="profile" />
+                  <span class="nav-profile-name">Admin</span>
+                </a>
+                <div class="dropdown-menu dropdown-menu-right navbar-dropdown" aria-labelledby="profileDropdown">
+                  <a class="dropdown-item mt-1" onclick="logout()">
+                    <i class="icon-logout text-primary mr-2"></i>
+                    Logout
+                  </a>
+                </div>
+              </li>
+            </ul>
+            <button class="navbar-toggler align-self-center" type="button" data-toggle="minimize">
+              <span class="icon-menu"></span>
+            </button>
+          </div>
+        </div>
+      </div>
+      <div class="nav-bottom">
+        <div class="container">
+          <ul class="nav page-navigation float-left">
+            <li class="nav-item">
+              <a href="../index.html" class="nav-link"><i class="link-icon icon-screen-desktop"></i><span class="menu-title">Dashboard</span></a>
+            </li>
+            <li id="admin-nav-link" class="nav-item">
+              <a href="../pages/admin.html" class="nav-link"><i class="link-icon icon-settings"></i><span class="menu-title">Admin</span></a>
+            </li>
+            <li class="nav-item admin-nav-link">
+              <a href="../pages/config.html" class="nav-link"><i class="link-icon icon-settings"></i><span class="menu-title">Modem Config</span></a>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </nav>
+
+    <!-- partial -->
+    <div class="container-fluid page-body-wrapper">
+      <div class="main-panel">
+
+        <div class="content-wrapper">
+
+          <div id="saveNotification" class="alert alert-warning" role="alert" hidden>
+            Changes unsaved
+          </div>
+
+          <div class="card-columns">
+            <form id="modemSettings" class="cmxform" method="post">
+            <!-- <form id="modemSettings" class="cmxform" action="../FORMPOST.HTM" method="post"> -->
+
+              <div class="card mb-2">
+                <div class="card-body">
+                  <h3 class="card-title">Modem Settings</h3>
+                    <fieldset>
+
+                      <div class="form-group row">
+                        <div class="col-lg-4">
+                          <label class="col-form-label" for="oac-ip">Modem Mode</label>
+                        </div>
+                        <div class="col-lg-8">
+                          <div class="form-group">
+                            <select id="oamodesel" name="oamodesel" class="js-example-basic-single">
+                               <option <!--FUNCTIONCALL oamode1 --> >OpenAMIP 9350</option>
+                               <option <!--FUNCTIONCALL oamode2 --> >iDirect 8300 Serial</option>
+                               <option <!--FUNCTIONCALL oamode3 --> >iDirect 9350 Serial</option>
+                               <option <!--FUNCTIONCALL oamode4 --> >Newtec</option>
+                             </select>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div id="open-aimp">
+                        <h6>OpenAMIP Settings</h6>
+                        <div class="form-group row">
+                          <div class="col-lg-4">
+                            <label class="col-form-label" for="modemip">Modem IP</label>
+                          </div>
+                          <div class="col-lg-8">
+                            <td>
+                              <input id="modemip" name="modemip" class="form-control" type="text" <!--FUNCTIONCALL ModemAddress --> >
+                            </td>
+                          </div>
+                          <div class="col-lg-4">
+                            <label class="col-form-label" for="modemport">OpenAMIP Port</label>
+                          </div>
+                          <div class="col-lg-8">
+                            <td>
+                              <input id="modemport" name="modemport" class="form-control" type="text" <!--FUNCTIONCALL ModemPort --> >
+                            </td>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div id="serial-telnet-settings">
+                        <h6>Serial/Telnet Settings</h6>
+                        <div class="form-group row">
+                          <div class="col-lg-4">
+                            <label class="col-form-label" for="oac-ip">Modem Baud Rate</label>
+                          </div>
+                          <div class="col-lg-8">
+                            <div class="form-group">
+                              <select id="serialspeed" name="serialspeed" class="js-example-basic-single">
+                                 <option <!--FUNCTIONCALL SerialSpeed1 --> >9600</option>
+                                 <option <!--FUNCTIONCALL SerialSpeed2 --> >115200</option>
+                               </select>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div class="form-group row">
+                          <div class="col-lg-4">
+                            <label class="col-form-label" for="net-mask">Root Password</label>
+                          </div>
+                          <div class="col-lg-8">
+                            <td>
+                              <input id="modemroot" name="modemroot" class="form-control" type="text" <!--FUNCTIONCALL ModemRoot --> >
+                            </td>
+                          </div>
+                          <div class="col-lg-4">
+                            <label class="col-form-label" for="net-mask">User Name</label>
+                          </div>
+                          <div class="col-lg-8">
+                            <td>
+                              <input id="modemuser" name="modemuser" class="form-control" type="text" <!--FUNCTIONCALL ModemUser --> >
+                            </td>
+                          </div>
+                          <div class="col-lg-4">
+                            <label class="col-form-label" for="net-mask">User Password</label>
+                          </div>
+                          <div class="col-lg-8">
+                            <td>
+                              <input id="modempass" name="modempass" class="form-control" type="text" <!--FUNCTIONCALL ModemPass --> >
+                            </td>
+                          </div>
+                        </div>
+
+                      </div>
+
+                      <div id="sattelite-settings">
+                        <h6>Satellite Settings</h6>
+                        <div class="form-group row">
+                          <div class="col-lg-4">
+                            <label class="col-form-label" for="net-mask">Satellite</label>
+                          </div>
+                          <div class="col-lg-8">
+                            <td>
+                              <input id="modemsat" name="modemsat" class="form-control" type="text" <!--FUNCTIONCALL ModemSat --> >
+                            </td>
+                          </div>
+                          <div class="col-lg-4">
+                            <label class="col-form-label" for="net-mask">Polarity</label>
+                          </div>
+                          <div class="col-lg-8">
+                            <div class="form-group">
+                              <div class="form-check">
+                                <label for="Hor" class="">Horizontal </label>
+                                <input id="Hor" name="modempol" type="radio" class="input-adjust" value="H" <!--FUNCTIONCALL ModemPol1 --> >
+
+                                <label for="Ver" class="">Vertical </label>
+                                <input id="Ver" name="modempol" type="radio" class="input-adjust" value="V" <!--FUNCTIONCALL ModemPol2 --> >
+
+                                <label for="None" class="">None </label>
+                                <input id="None" name="modempol" type="radio" class="input-adjust" value="N" <!--FUNCTIONCALL ModemPol3 --> >
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <h6>Antenna Settings:</h6>
+                      <div class="form-group row">
+                        <div class="col-lg-4">
+                          <label class="col-form-label" for="lock">LOCK Method</label>
+                        </div>
+                        <div class="col-lg-8">
+                          <div class="form-group">
+                            <select id="antlock" name="antlock" class="js-example-basic-single">
+                              <option <!--FUNCTIONCALL LockMode1 -->>DirectPoint (10000)</option>
+                              <option <!--FUNCTIONCALL LockMode2 -->>Reference Mode (1022)</option>
+                            </select>
+                          </div>
+                        </div>
+                      </div>
+
+                      <button id="loadChangeSettingsModalBtn" class="btn btn-primary" type="button">Save Settings</button>
+                    </fieldset>
+                </div>
+              </div>
+
+              <div id="accordion" class="accordion accordion-flush mb-2">
+                <div class="card">
+                  <div class="card-header" id="headingOne-3">
+                    <a style="text-transform: uppercase; font-weight: 600; font-size: 1.125rem;" class="mb-0" data-toggle="collapse" data-target="#collapseOne-3" aria-expanded="false" aria-controls="collapseOne-3">
+                      Advanced Settings
+                    </a>
+                  </div>
+                  <div id="collapseOne-3" class="collapse hide" aria-labelledby="headingOne-3" data-parent="#accordion">
+                    <div class="card">
+                      <div class="card-body">
+                        <h6>Tracking Settings</h6>
+                        <div class="form-group row">
+                          <div class="col-lg-4">
+                            <label class="col-form-label" for="net-mask">Scan Velocity (Vs)</label>
+                          </div>
+                          <div class="col-lg-8">
+                            <td>
+                              <input id="vscan" name="vscan" class="form-control" type="text" <!--FUNCTIONCALL Vscan --> >
+                            </td>
+                          </div>
+
+                          <div class="col-lg-4">
+                            <label class="col-form-label" for="net-mask">Track</label>
+                          </div>
+                          <div class="col-lg-8">
+                            <td>
+                              <input id="trackgain" name="trackgain" class="form-control" type="text" <!--FUNCTIONCALL TrackGain --> >
+                            </td>
+                          </div>
+
+                          <div class="col-lg-4">
+                            <label class="col-form-label" for="net-mask">Track Adjust Delay</label>
+                          </div>
+                          <div class="col-lg-8">
+                            <td>
+                              <input id="stepadjust" name="stepadjust" class="form-control" type="text" <!--FUNCTIONCALL StepAdjust --> >
+                            </td>
+                          </div>
+
+                          <div class="col-lg-4">
+                            <label class="col-form-label" for="net-mask">Track Adjust Ignore</label>
+                          </div>
+                          <div class="col-lg-8">
+                            <td>
+                              <input id="stepignore" name="stepignore" class="form-control" type="text" <!--FUNCTIONCALL StepIgnore --> >
+                            </td>
+                          </div>
+
+                          <div class="col-lg-4">
+                            <label class="col-form-label" for="net-mask">Lock Threshold</label>
+                          </div>
+                          <div class="col-lg-8">
+                            <td>
+                              <input id="lockthresh" name="lockthresh" class="form-control" type="text" <!--FUNCTIONCALL LockThresh --> >
+                            </td>
+                          </div>
+                        </div>
+
+                        <h6>SNR Threshold</h6>
+                        <div class="form-group row">
+
+                          <div class="col-lg-4">
+                            <label class="col-form-label" for="net-mask">Enable SNR Threshold</label>
+                          </div>
+                          <div class="col-lg-8">
+
+                            <div class="form-group">
+                              <div class="form-check">
+                                <input id="snrthreshold" name="snrthreshold" type="checkbox" class="input-adjust" <!--FUNCTIONCALL SNRthreshold --> >
+                              </div>
+                            </div>
+
+                          </div>
+
+                          <div class="col-lg-4">
+                            <label class="col-form-label" for="net-mask">SNR High Threshold</label>
+                          </div>
+                          <div class="col-lg-8">
+                            <td>
+                              <input id="snrhigh" name="snrhigh" class="form-control" type="text" <!--FUNCTIONCALL SNRhigh --> >
+                            </td>
+                          </div>
+
+                          <div class="col-lg-4">
+                            <label class="col-form-label" for="net-mask">SNR Min Threshold</label>
+                          </div>
+                          <div class="col-lg-8">
+                            <td>
+                              <input id="snrmin" name="snrmin" class="form-control" type="text" <!--FUNCTIONCALL SNRmin --> >
+                            </td>
+                          </div>
+
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="card mb-2">
+                <div class="card-body">
+                  <h4 class="card-title">Current Profile</h4>
+
+                  <div class="form-group row">
+                    <div class="col-lg-1">
+                      <input id="currentProfileId" name="profileId" class="form-control" type="text" disabled>
+                    </div>
+
+                    <div class="col-lg-8">
+                      <input required id="profilename" name="profilename" placeholder="Profile Name" class="form-control" type="text">
+                    </div>
+
+                    <div class="col-lg-3">
+                      <button id="exportProfileBtn" type="button" class="form-control btn btn-inverse-dark" value="Export">Export</button>
+                    </div>
+                  </div>
+
+                  <div class="form-group row mt-2">
+                    <div class="col-lg-1">
+
+                    </div>
+                    <div class="col-lg-8">
+                      <input id="importProfileFile" class="form-control btn btn-light" type="file" accept="json"/>
+                    </div>
+                    <div class="col-lg-3">
+                      <button id="importProfileBtn" type="button" class="form-control btn btn-inverse-dark" disabled>Import</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+            </form>
+          </div>
+        </div>
+        <!-- content-wrapper ends -->
+        <!-- partial:../partials/_footer.html -->
+        <footer class="footer ml-5 mr-5">
+          <div class="w-100 clearfix">
+            <span class="text-muted d-block text-center text-sm-left d-sm-inline-block">Copyright © 2021 PathFinder Digital. All rights reserved.</span>
+          </div>
+
+          <div id="profileList" hidden>
+            <!--FUNCTIONCALL DisplayProfiles -->
+          </div>
+
+        </footer>
+        <!-- partial -->
+      </div>
+      <!-- main-panel ends -->
+    </div>
+    <!-- page-body-wrapper ends -->
+  </div>
+  <!-- container-scroller -->
+  <!-- plugins:js -->
+  <script src="../js/vendor.bundle.base.js"></script>
+  <script src="../js/custom.addons.js"></script>
+  <script src="../js/app.js"></script>
+  <!-- endinject -->
+  <!-- Plugin js for this page-->
+  <!-- End plugin js for this page-->
+  <!-- inject:js -->
+  <script src="../js/template.js"></script>
+  <script src="../js/form.submit.js"></script>
+  <script src="../js/config.page.js"></script>
+
+  <!-- endinject -->
+  <!-- Custom js for this page-->
+  <!-- End custom js for this page-->
+</body>
+
+</html>
